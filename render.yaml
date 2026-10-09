@@ -13,3 +13,9 @@ services:
         value: 20.19.5
       - key: OLLAMA_MODEL
         value: gemma3:1b
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        value: JBFqnCBsd6RMkjVDRZzb
+      - key: ELEVENLABS_MODEL
+        value: eleven_flash_v2_5

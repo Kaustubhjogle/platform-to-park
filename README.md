@@ -10,6 +10,8 @@ Platform to Park combines verified community data with optional local open-weigh
 4. If Ollama is available, a local model rewrites it into a more distinctive mission.
 5. The user closes the screen and takes the detour.
 
+Pocket Mode can optionally read the finished mission aloud with ElevenLabs, so the user can put their phone away sooner. The app still works fully without it.
+
 The model is deliberately prevented from inventing routes, access information, or species. It writes only from the open data supplied in its prompt.
 
 ## Why open innovation matters
@@ -45,6 +47,18 @@ To swap models or use another Ollama host:
 OLLAMA_MODEL=gemma3:4b OLLAMA_URL=http://127.0.0.1:11434 npm run dev
 ```
 
+### Optional Pocket Mode
+
+Add an ElevenLabs API key to your local `.env` to enable spoken missions:
+
+```bash
+ELEVENLABS_API_KEY=your_key_here
+ELEVENLABS_VOICE_ID=JBFqnCBsd6RMkjVDRZzb
+ELEVENLABS_MODEL=eleven_flash_v2_5
+```
+
+Only the generated mission text is sent to ElevenLabs. The key stays on the server and is never exposed to the browser. Without a key, Pocket Mode shows a friendly unavailable message and every other feature continues to work.
+
 ## Deploy on Render
 
 The repository includes a Render Blueprint in `render.yaml`. It deploys the full Next.js application as a Node web service in Render's Singapore region and uses `/api/health` for deployment health checks.
@@ -52,7 +66,8 @@ The repository includes a Render Blueprint in `render.yaml`. It deploys the full
 1. Push this repository to GitHub, GitLab, or Bitbucket.
 2. In Render, choose **New → Blueprint**.
 3. Connect the repository and select `render.yaml`.
-4. Review the `platform-to-park` service and deploy it.
+4. Enter `ELEVENLABS_API_KEY` when the Blueprint asks for the secret. You can leave it blank if you do not want Pocket Mode.
+5. Review the `platform-to-park` service and deploy it.
 
 The public service works through the built-in open-data mission fallback because it cannot reach Ollama running on a visitor's laptop. Local development automatically uses Gemma 3 when Ollama is available. To use hosted Gemma inference later, set `OLLAMA_URL` in Render to a reachable Ollama-compatible service.
 
@@ -69,6 +84,7 @@ npm run discover:data
 
 - Next.js and TypeScript
 - Ollama with an open-weight model
+- ElevenLabs for optional spoken Pocket Mode
 - OpenStreetMap
 - iNaturalist
 

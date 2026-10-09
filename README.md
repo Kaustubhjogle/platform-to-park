@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Platform to Park
 
-## Getting Started
+Turn a Mumbai train stop into one small reason to go outside.
 
-First, run the development server:
+Platform to Park combines verified community data with optional local open-weight generation:
+
+1. OpenStreetMap supplies the station and nearby public green space.
+2. iNaturalist supplies research-grade observations around that space.
+3. The app always creates a grounded outdoor mission from those facts.
+4. If Ollama is available, a local model rewrites it into a more distinctive mission.
+5. The user closes the screen and takes the detour.
+
+The model is deliberately prevented from inventing routes, access information, or species. It writes only from the open data supplied in its prompt.
+
+## Why open innovation matters
+
+The selected station and generated mission never need to be sent to a proprietary AI provider. The core open-data experience works without any model. When enabled, Ollama runs AI locally, and the model can be replaced through an environment variable. Neither the maps nor biodiversity layer requires a paid API.
+
+## Run locally
+
+The website works with only Node.js:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For locally generated AI missions, optionally install [Ollama](https://ollama.com) and download the default small open-weight model:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+ollama pull gemma3:1b
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Then start Ollama alongside the web app:
 
-## Learn More
+```bash
+ollama serve
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To swap models or use another Ollama host:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+OLLAMA_MODEL=gemma3:4b OLLAMA_URL=http://127.0.0.1:11434 npm run dev
+```
 
-## Deploy on Vercel
+## Deploy on Render
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The repository includes a Render Blueprint in `render.yaml`. It deploys the full Next.js application as a Node web service in Render's Singapore region and uses `/api/health` for deployment health checks.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push this repository to GitHub, GitLab, or Bitbucket.
+2. In Render, choose **New → Blueprint**.
+3. Connect the repository and select `render.yaml`.
+4. Review the `platform-to-park` service and deploy it.
+
+The public service works through the built-in open-data mission fallback because it cannot reach Ollama running on a visitor's laptop. Local development automatically uses Gemma 3 when Ollama is available. To use hosted Gemma inference later, set `OLLAMA_URL` in Render to a reachable Ollama-compatible service.
+
+## Data maintenance
+
+```bash
+npm run verify:data
+npm run discover:data
+```
+
+`verify:data` checks configured park records against OpenStreetMap and nearby iNaturalist observations. `discover:data` scans the complete configured Mumbai suburban candidate list and prints every station that passes.
+
+## Stack
+
+- Next.js and TypeScript
+- Ollama with an open-weight model
+- OpenStreetMap
+- iNaturalist
+
+No database or paid AI/maps API is required.

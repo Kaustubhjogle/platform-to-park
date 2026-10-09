@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: platform-to-park
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 20.19.5
+      - key: OLLAMA_MODEL
+        value: gemma3:1b

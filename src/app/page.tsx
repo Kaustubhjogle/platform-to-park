@@ -1,69 +1,41 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { OpenDataMission, stations } from "@/lib/stations";
+
+function LeafMark() { return <svg viewBox="0 0 40 40" aria-hidden="true" className="mark"><path d="M31.5 7.3C18.2 8.2 9.4 15.1 9.4 24.1c0 5.1 3.9 8.3 8.3 8.3 8.6 0 13.4-10.4 13.8-25.1Z" fill="currentColor" /><path d="M10.5 31.7c5.1-7.7 10.7-12.3 17.5-16.2" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>; }
+function Arrow() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
+function SearchIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="m16 16 4.2 4.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>; }
+function Chevron() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  const [stationIndex, setStationIndex] = useState(0); const [stationQuery, setStationQuery] = useState(""); const [stationMenuOpen, setStationMenuOpen] = useState(false); const [saved, setSaved] = useState(false); const [openData, setOpenData] = useState<OpenDataMission | null>(null); const [status, setStatus] = useState<"idle" | "loading" | "error">("idle"); const [error, setError] = useState("");
+  const stationPickerRef = useRef<HTMLDivElement>(null); const stationSearchRef = useRef<HTMLInputElement>(null);
+  const station = stations[stationIndex]; const fallback = useMemo(() => station.fallback, [station]);
+  const filteredStations = useMemo(() => {
+    const query = stationQuery.trim().toLocaleLowerCase();
+    return stations.map((option, index) => ({ option, index })).filter(({ option }) => !query || `${option.name} ${option.line} ${option.kind}`.toLocaleLowerCase().includes(query));
+  }, [stationQuery]);
+  useEffect(() => {
+    if (stationMenuOpen) stationSearchRef.current?.focus();
+    const closeMenu = (event: MouseEvent) => { if (!stationPickerRef.current?.contains(event.target as Node)) setStationMenuOpen(false); };
+    document.addEventListener("mousedown", closeMenu);
+    return () => document.removeEventListener("mousedown", closeMenu);
+  }, [stationMenuOpen]);
+  const chooseStation = (index: number) => { setStationIndex(index); setStationQuery(""); setStationMenuOpen(false); setOpenData(null); setStatus("idle"); setError(""); setSaved(false); };
+  const refreshMission = async () => {
+    setStatus("loading"); setError(""); setSaved(false);
+    try { const response = await fetch(`/api/mission?station=${station.id}`); const data = (await response.json()) as OpenDataMission | { error: string }; if (!response.ok || "error" in data) throw new Error("error" in data ? data.error : "Could not load data."); setOpenData(data); setStatus("idle"); } catch (reason) { setOpenData(null); setError(reason instanceof Error ? reason.message : "Could not load data."); setStatus("error"); }
+  };
+  const missionPlace = openData?.park.name ?? fallback.place;
+  const mapDestination = openData?.park.name ?? station.verifiedPark?.name ?? "Nearby green space";
+  const species = openData?.species.length ? openData.species.slice(0, 3).join(", ") : fallback.species;
+  const walk = openData ? `${Math.max(1, Math.round(openData.park.distanceM / 80))} min straight-line map estimate · ${openData.park.distanceM.toLocaleString()} m` : fallback.walk;
+  return <main>
+    <nav className="nav shell" aria-label="Primary navigation"><a className="brand" href="#top"><LeafMark /><span>platform<br />to park</span></a><span className="nav-note">Mumbai, one small detour at a time.</span><a className="about-link" href="#open-data">Why open?</a></nav>
+    <section id="top" className="hero shell"><div className="hero-copy"><p className="wordmark">Step out. Look up. Come back better.</p><h1>Your commute<br /><em>has a green exit.</em></h1><p className="lede">Choose a station. Open map and biodiversity data ground a local open-weight model that creates one tiny outdoor mission.</p><a className="text-link" href="#mission">Build today&apos;s mission <Arrow /></a></div><div className="map-card" aria-label={`A short outdoor detour from ${station.name} to ${mapDestination}`}><div className="map-road map-road-one" /><div className="map-road map-road-two" /><svg className="map-route" viewBox="0 0 500 450" preserveAspectRatio="none" aria-hidden="true"><path d="M118 132 C 215 91, 256 188, 226 247 C 196 306, 288 352, 390 286" /><circle cx="118" cy="132" r="7" /><circle cx="390" cy="286" r="7" /></svg><div className="map-node station-node"><span>{station.kind} station</span><strong>{station.name}</strong><small>{station.line}</small></div><div className="map-node green-node"><LeafMark /><span>OpenStreetMap</span><strong>{mapDestination}</strong><small>Public green-space data</small></div><div className="nature-note"><span>Local open AI</span><strong>Creates your mission</strong><small>Ollama · open-weight model</small></div><p className="map-caption"><span>Open data</span><span className="caption-line" /> <span>Local AI</span><span className="caption-line" /><span>Go outside</span></p></div></section>
+    <section id="mission" className="mission-section"><div className="shell mission-layout"><div className="mission-heading"><p className="section-label">Today&apos;s tiny expedition</p><h2>Make a mission,<br />then leave.</h2><p>Open data always builds the mission. When Ollama is available, a local open-weight model makes it more personal.</p></div><div className="mission-builder"><label id="station-label">I&apos;m starting at</label><div className="station-picker" ref={stationPickerRef}><button type="button" className="station-picker-trigger" aria-labelledby="station-label station-value" aria-haspopup="listbox" aria-expanded={stationMenuOpen} onClick={() => setStationMenuOpen((open) => !open)}><span id="station-value"><strong>{station.name}</strong><small>{station.line}</small></span><Chevron /></button>{stationMenuOpen && <div className="station-picker-menu"><div className="station-picker-search"><SearchIcon /><input ref={stationSearchRef} type="search" value={stationQuery} onChange={(event) => setStationQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") setStationMenuOpen(false); }} placeholder="Search stations or lines" aria-label="Search station options" autoComplete="off" /></div><p className="station-result-count" aria-live="polite">{filteredStations.length === 1 ? "1 station" : `${filteredStations.length} stations`}</p><div className="station-options" role="listbox" aria-labelledby="station-label">{filteredStations.length > 0 ? filteredStations.map(({ option, index }) => <button type="button" role="option" aria-selected={index === stationIndex} className={index === stationIndex ? "station-option selected" : "station-option"} onClick={() => chooseStation(index)} key={option.id}><span>{option.name}</span><small>{option.line}</small></button>) : <p className="station-empty">No stations match “{stationQuery}”.</p>}</div></div>}</div><button type="button" className="data-button" onClick={refreshMission} disabled={status === "loading"}>{status === "loading" ? "Building your outdoor mission…" : "Generate outdoor mission"}<Arrow /></button>{status === "error" && <p className="data-error" role="alert">{error}</p>}<article className="mission-card" aria-live="polite"><div className="mission-topline"><span>{openData ? (openData.ai.available ? `Local AI · ${openData.ai.model}` : "Open-data mission · local AI optional") : `${station.kind} departure`}</span></div><h3>{openData?.ai.headline ?? `Find your way to ${missionPlace}.`}</h3>{openData?.ai.action && <p className="ai-action">{openData.ai.action}</p>}<div className="mission-details"><p><strong>Map estimate</strong>{walk}</p><p><strong>Look for</strong>{species}</p></div><p className="prompt">“{openData?.ai.notice ?? fallback.prompt}”</p>{openData && <a className="source-link" href={openData.park.osmUrl} target="_blank" rel="noreferrer">View this mapped green space on OpenStreetMap <Arrow /></a>}<button className={saved ? "mission-button saved" : "mission-button"} type="button" onClick={() => setSaved(true)}>{saved ? "Mission saved" : "Take this mission"}<Arrow /></button></article></div></div></section>
+    <section id="open-data" className="open-section shell"><div><p className="section-label">Open by design</p><h2>Community knowledge.<br />Optional local AI.</h2></div><div className="open-copy"><p>OpenStreetMap finds public green spaces and iNaturalist supplies nearby research-grade observations. The site works from those sources alone; if Ollama is running, a local open-weight model creates a more distinctive mission without sending your station choice to a closed AI service.</p><p className="fine-print">AI output is grounded only in retrieved open data. Walking time is a simple map estimate, not a safety or access guarantee.</p></div></section>
+    <footer className="footer shell"><span>Platform to Park</span><span>Made for Hacktoberfest · Touch Grass</span></footer>
+  </main>;
 }
